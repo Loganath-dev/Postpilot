@@ -1,0 +1,96 @@
+.platform {
+  background: var(--bg-secondary);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: var(--space-3xl);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.table thead {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.table th {
+  padding: 1rem 1.2rem;
+  text-align: left;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.table td {
+  padding: 0.9rem 1.2rem;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: top;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tr:hover td {
+  background: rgba(99, 102, 241, 0.03);
+}
+
+.dimCol {
+  width: 15%;
+}
+
+.platCol {
+  width: 42.5%;
+}
+
+.platBadge {
+  display: inline-flex;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  border: 1px solid;
+}
+
+.dimension {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  white-space: nowrap;
+}
+
+.value {
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+@media (max-width: 768px) {
+  .dimCol {
+    width: 25%;
+  }
+
+  .platCol {
+    width: 37.5%;
+  }
+
+  .table {
+    font-size: 0.8rem;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.7rem 0.8rem;
+  }
+}

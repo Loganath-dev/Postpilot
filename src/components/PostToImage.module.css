@@ -1,0 +1,288 @@
+/* Tweet URL to Image Tool */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.inputSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.input {
+  width: 100%;
+  padding: var(--space-md);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--text-primary);
+}
+
+.hint {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+
+/* Generate Button */
+.generateBtn {
+  width: 100%;
+}
+
+.generateBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error {
+  padding: var(--space-md);
+  font-size: 0.88rem;
+  color: var(--accent-rose);
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: var(--radius-md);
+}
+
+.previewArea {
+  margin-top: var(--space-2xl);
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.controlsBar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+  background: white;
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.controlGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.controlLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.controlSelect {
+  width: 100%;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  position: relative;
+}
+
+.controlSelect:focus {
+  border-color: var(--text-primary);
+}
+
+.exportBtn {
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 9999px;
+  padding: 0.6rem 1.4rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+  white-space: nowrap;
+}
+
+.exportBtn:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 600px) {
+  .controlsBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.previewTitle {
+  display: none;
+}
+
+.previewWrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-xl);
+}
+
+.downloadBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--bg-primary);
+  background: var(--text-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.downloadBtn:hover {
+  opacity: 0.85;
+  transform: translateY(-2px);
+}
+
+/* Twitter Card Restyling */
+.imageExportWrapper {
+  padding: 40px 60px;
+  border-radius: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background 0.3s ease;
+}
+
+.twitterCardLight {
+  width: 520px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08); /* Clean modern shadow */
+}
+
+.twitterHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.twitterHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.twitterAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #1d9bf0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.twitterUserInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.twitterDisplayName {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f1419;
+}
+
+.twitterHandle {
+  font-size: 0.9rem;
+  color: #536471;
+}
+
+.twitterBody {
+  font-size: 1.15rem;
+  line-height: 1.5;
+  color: #0f1419;
+  white-space: pre-line;
+  margin-bottom: 20px;
+}
+
+.twitterFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding-top: 16px;
+}
+
+.twitterStat {
+  font-size: 0.9rem;
+  color: #536471;
+}
+
+.twitterLogo {
+  font-size: 1.6rem;
+  color: #0f1419;
+  font-weight: 800;
+}
+
+@media (max-width: 600px) {
+  .twitterCardLight {
+    width: 100%;
+    min-width: 0;
+  }
+  .imageExportWrapper {
+    padding: 20px;
+  }
+}
