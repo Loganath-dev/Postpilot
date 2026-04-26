@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase admin client for backend operations
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 // ── Rich tone definitions injected into the user prompt ──
 const TONE_DEFINITIONS: Record<string, string> = {
@@ -193,14 +200,36 @@ export async function POST(req: NextRequest) {
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     
-    // BACKEND CREDIT LOGIC:
-    // Free Plan: 10 Tokens total (1 post generation)
-    // Starter Plan: 2,000 Tokens/month
-    // Pro Plan: 5,000 Tokens/month
-    // Token Cost: Text generation = 10 Tokens
-    
     const body = await req.json();
     const { input, platform, tone, writingDNA, image, plan = 'free' } = body;
+    
+    // ANONYMOUS IP TRACKING LOGIC
+    let ipAddress = 'unknown';
+    if (plan === 'free') {
+      // x-forwarded-for works in production (Vercel), fallback to localhost IP for dev
+      ipAddress = req.headers.get('x-forwarded-for') 
+        || req.headers.get('x-real-ip') 
+        || '127.0.0.1';
+      
+      // Clean up IP string if multiple are provided by proxies
+      if (ipAddress.includes(',')) {
+        ipAddress = ipAddress.split(',')[0].trim();
+      }
+
+      // Check current usage in Supabase
+      const { data: usageData } = await supabaseAdmin
+        .from('anonymous_usage')
+        .select('tokens_used')
+        .eq('ip_address', ipAddress)
+        .maybeSingle();
+
+      if (usageData && usageData.tokens_used >= 10) {
+        return NextResponse.json(
+          { error: 'Free limit reached. Please sign up for an account to continue generating content.' },
+          { status: 403 }
+        );
+      }
+    }
 
     // Model selection based on user plan:
     // Free -> gpt-4o-mini
@@ -283,6 +312,32 @@ Generate content ONLY for the "${platform}" key in your JSON. Set other platform
         error: `Parse failed: ${e.message}`,
         raw: text,
       }, { status: 400 });
+    }
+
+    // RECORD ANONYMOUS USAGE
+    if (plan === 'free' && ipAddress !== 'unknown') {
+      const { data: existingData } = await supabaseAdmin
+        .from('anonymous_usage')
+        .select('tokens_used')
+        .eq('ip_address', ipAddress)
+        .single();
+
+      if (existingData) {
+        await supabaseAdmin
+          .from('anonymous_usage')
+          .update({ 
+            tokens_used: existingData.tokens_used + 10,
+            last_used: new Date().toISOString()
+          })
+          .eq('ip_address', ipAddress);
+      } else {
+        await supabaseAdmin
+          .from('anonymous_usage')
+          .insert({
+            ip_address: ipAddress,
+            tokens_used: 10
+          });
+      }
     }
 
     return NextResponse.json({ success: true, data: parsed });

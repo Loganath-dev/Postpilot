@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase admin client for backend operations
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 const REDDIT_SYSTEM_PROMPT = `You are a 7-year Reddit veteran with 50k+ karma. You've spent thousands of hours in niche subreddits. You understand Reddit's culture at a cellular level — the sarcasm, the skepticism, the hatred of anything that smells like marketing.
 
@@ -175,6 +182,31 @@ export async function POST(req: NextRequest) {
     
     const body = await req.json();
     const { input, subreddit, plan = 'free' } = body;
+    
+    // ANONYMOUS IP TRACKING LOGIC
+    let ipAddress = 'unknown';
+    if (plan === 'free') {
+      ipAddress = req.headers.get('x-forwarded-for') 
+        || req.headers.get('x-real-ip') 
+        || '127.0.0.1';
+      
+      if (ipAddress.includes(',')) {
+        ipAddress = ipAddress.split(',')[0].trim();
+      }
+
+      const { data: usageData } = await supabaseAdmin
+        .from('anonymous_usage')
+        .select('tokens_used')
+        .eq('ip_address', ipAddress)
+        .maybeSingle();
+
+      if (usageData && usageData.tokens_used >= 10) {
+        return NextResponse.json(
+          { error: 'Free limit reached. Please sign up for an account to continue generating content.' },
+          { status: 403 }
+        );
+      }
+    }
 
     // Free -> gpt-4o-mini
     // Pro/Starter -> gpt-4o
@@ -226,6 +258,32 @@ Deeply adapt your tone, vocabulary, formatting, and post length to match what pe
         error: `Parse failed: ${e.message}`,
         raw: text,
       }, { status: 400 });
+    }
+
+    // RECORD ANONYMOUS USAGE
+    if (plan === 'free' && ipAddress !== 'unknown') {
+      const { data: existingData } = await supabaseAdmin
+        .from('anonymous_usage')
+        .select('tokens_used')
+        .eq('ip_address', ipAddress)
+        .single();
+
+      if (existingData) {
+        await supabaseAdmin
+          .from('anonymous_usage')
+          .update({ 
+            tokens_used: existingData.tokens_used + 10,
+            last_used: new Date().toISOString()
+          })
+          .eq('ip_address', ipAddress);
+      } else {
+        await supabaseAdmin
+          .from('anonymous_usage')
+          .insert({
+            ip_address: ipAddress,
+            tokens_used: 10
+          });
+      }
     }
 
     return NextResponse.json({ success: true, data: parsed });
