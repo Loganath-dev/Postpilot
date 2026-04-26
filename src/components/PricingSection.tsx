@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import styles from './PricingSection.module.css';
 import { pricingTiers } from '@/data/pricing';
 
@@ -65,9 +66,13 @@ export default function PricingSection() {
                 ))}
               </ul>
 
-              <button className={`btn ${tier.popular ? 'btn-primary' : 'btn-secondary'} ${styles.ctaBtn}`}>
+              <Link 
+                href="/signup" 
+                className={`btn ${tier.popular ? 'btn-primary' : 'btn-secondary'} ${styles.ctaBtn}`}
+                style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+              >
                 {tier.cta}
-              </button>
+              </Link>
 
             </div>
           ))}
