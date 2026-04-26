@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 // ── Rich tone definitions injected into the user prompt ──
 const TONE_DEFINITIONS: Record<string, string> = {
   influencer: `TONE: INFLUENCER — Write like a high-energy creator with 500k+ followers. Confident, slightly provocative, uses "you" directly. Pattern-interrupt openers. Short punchy rhythm. Speaks from authority but stays relatable. Think: someone who gets paid to post. Uses rhetorical questions. Ends with a bold takeaway the reader wants to screenshot.`,
@@ -193,6 +191,8 @@ Use \\n for line breaks within strings.
 
 export async function POST(req: NextRequest) {
   try {
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    
     // BACKEND CREDIT LOGIC:
     // Free Plan: 10 Tokens total (1 post generation)
     // Starter Plan: 2,000 Tokens/month

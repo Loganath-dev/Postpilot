@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 const REDDIT_SYSTEM_PROMPT = `You are a 7-year Reddit veteran with 50k+ karma. You've spent thousands of hours in niche subreddits. You understand Reddit's culture at a cellular level — the sarcasm, the skepticism, the hatred of anything that smells like marketing.
 
 Your job: Take a raw idea and produce a Reddit post (title + body) that is indistinguishable from a genuine top-voted post on the target subreddit.
@@ -167,6 +165,8 @@ Return ONLY valid JSON. No markdown fences. No backticks. No explanation. Just t
 
 export async function POST(req: NextRequest) {
   try {
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    
     // BACKEND CREDIT LOGIC:
     // Free Plan: 10 Tokens total (1 post generation)
     // Starter Plan: 2,000 Tokens/month
