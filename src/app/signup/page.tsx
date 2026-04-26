@@ -13,13 +13,16 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccessMsg(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -31,7 +34,14 @@ export default function Signup() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push('/generate');
+      if (data.session) {
+        // Email confirmation is disabled, user is logged in
+        router.push('/generate');
+      } else {
+        // Email confirmation is required
+        setSuccessMsg('Success! Please check your email to confirm your account before logging in.');
+        setLoading(false);
+      }
     }
   };
 
@@ -58,6 +68,7 @@ export default function Signup() {
       <div className={styles.formBox}>
         <h1 className={styles.title}>Create your account</h1>
         {error && <div className={styles.error}>{error}</div>}
+        {successMsg && <div className={styles.success} style={{ color: '#059669', backgroundColor: '#d1fae5', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.9rem', border: '1px solid #34d399' }}>{successMsg}</div>}
         
         <button 
           onClick={handleGoogleSignup} 
