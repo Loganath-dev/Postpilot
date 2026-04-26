@@ -20,7 +20,6 @@ export const pricingTiers: PricingTier[] = [
     features: [
       { name: "Tokens", included: true, detail: "100 Tokens (one-time)" },
       { name: "Text Generations", included: true, detail: "Up to 10 posts" },
-      { name: "Image Generations", included: true, detail: "Up to 2 images" },
       { name: "Style Training", included: true, detail: "1 Profile" },
       { name: "Reddit Anti-AI Engine", included: true },
       { name: "Tweet-to-Image", included: true },
@@ -40,13 +39,12 @@ export const pricingTiers: PricingTier[] = [
     features: [
       { name: "Tokens / month", included: true, detail: "2,000 Tokens" },
       { name: "Text Generations", included: true, detail: "Up to 200 posts" },
-      { name: "Image Generations", included: true, detail: "Up to 40 images" },
       { name: "Style Training", included: true, detail: "1 Permanent Profile" },
       { name: "Reddit Anti-AI Engine", included: true },
       { name: "Tweet-to-Image", included: true },
       { name: "Photo / Screenshot to Post", included: true },
       { name: "Platform", included: true, detail: "All Platforms" },
-      { name: "Overage Tokens", included: true, detail: "$4 per 1,000 Tokens" },
+      { name: "Overage Tokens", included: true, detail: "Buy extra tokens if limit exceeded" },
     ],
     cta: "Get Starter"
   },
@@ -55,19 +53,17 @@ export const pricingTiers: PricingTier[] = [
     name: "Pro",
     price: 29,
     annualPrice: 290,
-    description: "For founders and agencies scaling reach. 5,000 tokens with priority AI.",
+    description: "For founders scaling reach. 5,000 tokens per month included.",
     popular: false,
     features: [
       { name: "Tokens / month", included: true, detail: "5,000 Tokens" },
-      { name: "Text Generations", included: true, detail: "Up to 500 posts" },
-      { name: "Image Generations", included: true, detail: "Up to 100 images" },
+      { name: "Text Generations", included: true, detail: "Unlimited Posts*" },
       { name: "Style Training", included: true, detail: "Unlimited Profiles" },
       { name: "Reddit Anti-AI Engine", included: true },
       { name: "Tweet-to-Image", included: true },
       { name: "Photo / Screenshot to Post", included: true },
       { name: "Platform", included: true, detail: "All Platforms" },
-      { name: "Overage Tokens", included: true, detail: "$4 per 1,000 Tokens" },
-      { name: "AI Model", included: true, detail: "Gemini 2.0 Flash (Advanced)" },
+      { name: "Overage Tokens", included: true, detail: "Buy extra tokens if 5,000 exceeded" },
       { name: "Support", included: true, detail: "Priority Support" }
     ],
     cta: "Go Pro"
