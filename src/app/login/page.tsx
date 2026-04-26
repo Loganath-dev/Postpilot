@@ -87,7 +87,10 @@ export default function Login() {
             />
           </div>
           <div className={styles.inputGroup}>
-            <label className={styles.label} htmlFor="password">Password</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label className={styles.label} htmlFor="password">Password</label>
+              <Link href="/forgot-password" className={styles.link} style={{ fontSize: '0.8rem' }}>Forgot password?</Link>
+            </div>
             <input
               id="password"
               type="password"

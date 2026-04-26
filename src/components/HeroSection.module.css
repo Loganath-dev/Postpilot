@@ -291,4 +291,31 @@
     width: 100%;
     max-width: 200px;
   }
+
+  .heroVisual {
+    flex-direction: column;
+    height: auto;
+    padding: var(--space-lg);
+    gap: var(--space-md);
+  }
+
+  .visualInput {
+    width: 100%;
+    max-width: 280px;
+    transform: rotate(0);
+  }
+
+  .visualBeam {
+    display: none;
+  }
+
+  .visualOutputs {
+    width: 100%;
+    max-width: 280px;
+    align-items: center;
+  }
+
+  .vOutput {
+    width: 100%;
+  }
 }

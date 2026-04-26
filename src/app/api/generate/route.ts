@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import OpenAI from 'openai';
 
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // ── Rich tone definitions injected into the user prompt ──
 const TONE_DEFINITIONS: Record<string, string> = {
@@ -193,25 +193,19 @@ Use \\n for line breaks within strings.
 
 export async function POST(req: NextRequest) {
   try {
-    // BACKEND CREDIT LOGIC (TODO for Billing Integration):
-    // Free Plan: 100 Tokens total (no signup required, limited trial)
+    // BACKEND CREDIT LOGIC:
+    // Free Plan: 10 Tokens total (1 post generation)
     // Starter Plan: 2,000 Tokens/month
     // Pro Plan: 5,000 Tokens/month
-    // Token Cost: Text generation = 10 Tokens, Image generation = 50 Tokens
-    // Overage (Starter & Pro): $4 per 1,000 Tokens
-    // Flow:
-    // 1. Fetch user's active plan and current token balance from Supabase.
-    // 2. Check if balance >= required tokens for this generation.
-    // 3. If insufficient, return error: "Token limit reached. Purchase more tokens ($4/1,000)."
-    // 4. After successful generation, deduct tokens from user's balance.
-
+    // Token Cost: Text generation = 10 Tokens
+    
     const body = await req.json();
     const { input, platform, tone, writingDNA, image, plan = 'free' } = body;
 
     // Model selection based on user plan:
-    // Free -> 2.0 Flash Lite (Fast, cost-efficient)
-    // Pro/Other -> 2.0 Flash (Smarter, higher quality)
-    const modelId = plan === 'free' ? 'gemini-2.0-flash-lite' : 'gemini-2.0-flash';
+    // Free -> gpt-4o-mini
+    // Pro/Starter -> gpt-4o
+    const modelId = plan === 'free' ? 'gpt-4o-mini' : 'gpt-4o';
 
     if ((!input || input.trim().length === 0) && !image) {
       return NextResponse.json(
@@ -248,59 +242,45 @@ Generate content ONLY for the "${platform}" key in your JSON. Set other platform
       userPrompt += `\n\n━━ WRITING DNA SAMPLES (HIGHEST PRIORITY — match this voice exactly) ━━\n${writingDNA}\n━━ END DNA ━━\nYou MUST clone the style, rhythm, vocabulary, and emotional register from these samples. The user should not be able to tell the difference between their own writing and your output.`;
     }
 
-    // Build contents: multimodal if image is provided, text-only otherwise
+    // Build the messages array for OpenAI
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let contents: any;
+    const messages: any[] = [
+      { role: "system", content: SYSTEM_PROMPT }
+    ];
 
     if (image) {
-      const base64Match = image.match(/^data:(image\/\w+);base64,(.+)$/);
-      if (base64Match) {
-        const mimeType = base64Match[1];
-        const base64Data = base64Match[2];
-        contents = [
-          { inlineData: { mimeType, data: base64Data } },
-          { text: userPrompt + '\n\nAn image has been uploaded. Extract any text, ideas, or content from this image and use it as the primary source material for generating the social media content.' },
-        ];
-      } else {
-        contents = userPrompt;
-      }
+      const imageUrl = image.startsWith('data:image') ? image : `data:image/jpeg;base64,${image}`;
+      messages.push({
+        role: "user",
+        content: [
+          { type: "text", text: userPrompt + '\n\nAn image has been uploaded. Extract any text, ideas, or content from this image and use it as the primary source material for generating the social media content.' },
+          { type: "image_url", image_url: { url: imageUrl } }
+        ]
+      });
     } else {
-      contents = userPrompt;
+      messages.push({
+        role: "user",
+        content: userPrompt
+      });
     }
 
-    const response = await genAI.models.generateContent({
+    const response = await openai.chat.completions.create({
       model: modelId,
-      contents,
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        temperature: 0.85,
-        maxOutputTokens: 2048,
-      },
+      messages: messages,
+      temperature: 0.85,
+      max_tokens: 2048,
+      response_format: { type: "json_object" },
     });
 
-    const text = response.text ?? '';
+    const text = response.choices[0]?.message?.content ?? '{}';
     
-    let cleanedText = text.trim();
-    
-    // Most robust extraction: find first '{' and last '}'
-    const firstBrace = text.indexOf('{');
-    const lastBrace = text.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      cleanedText = text.substring(firstBrace, lastBrace + 1);
-    }
-
-    // Strip invisible characters and potential double BOMs
-    cleanedText = cleanedText.replace(/[\u200B-\u200D\uFEFF]/g, '');
-
-    // Parse the JSON response
     let parsed;
     try {
-      parsed = JSON.parse(cleanedText);
+      parsed = JSON.parse(text);
     } catch (e: any) {
-      // If JSON parsing fails, return raw text
       return NextResponse.json({
         success: false,
-        error: `Parse failed: ${e.message}. First 20 chars: "${cleanedText.substring(0, 20)}"`,
+        error: `Parse failed: ${e.message}`,
         raw: text,
       }, { status: 400 });
     }
@@ -308,8 +288,7 @@ Generate content ONLY for the "${platform}" key in your JSON. Set other platform
     return NextResponse.json({ success: true, data: parsed });
   } catch (error: unknown) {
     console.error('Generation error:', error);
-    const message =
-      error instanceof Error ? error.message : 'Generation failed';
+    const message = error instanceof Error ? error.message : 'Generation failed';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import OpenAI from 'openai';
 
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const REDDIT_SYSTEM_PROMPT = `You are a 7-year Reddit veteran with 50k+ karma. You've spent thousands of hours in niche subreddits. You understand Reddit's culture at a cellular level — the sarcasm, the skepticism, the hatred of anything that smells like marketing.
 
@@ -167,13 +167,18 @@ Return ONLY valid JSON. No markdown fences. No backticks. No explanation. Just t
 
 export async function POST(req: NextRequest) {
   try {
+    // BACKEND CREDIT LOGIC:
+    // Free Plan: 10 Tokens total (1 post generation)
+    // Starter Plan: 2,000 Tokens/month
+    // Pro Plan: 5,000 Tokens/month
+    // Token Cost: Text generation = 10 Tokens
+    
     const body = await req.json();
     const { input, subreddit, plan = 'free' } = body;
 
-    // Model selection based on user plan:
-    // Free -> 2.0 Flash Lite (Fast, cost-efficient)
-    // Pro/Other -> 2.0 Flash (Smarter, higher quality)
-    const modelId = plan === 'free' ? 'gemini-2.0-flash-lite' : 'gemini-2.0-flash';
+    // Free -> gpt-4o-mini
+    // Pro/Starter -> gpt-4o
+    const modelId = plan === 'free' ? 'gpt-4o-mini' : 'gpt-4o';
 
     if (!input || input.trim().length === 0) {
       return NextResponse.json(
@@ -197,36 +202,28 @@ Deeply adapt your tone, vocabulary, formatting, and post length to match what pe
       userPrompt += `\n\nNo specific subreddit. Write for a general Reddit audience — relatable, specific, and engaging.`;
     }
 
-    const response = await genAI.models.generateContent({
+    const messages = [
+      { role: "system", content: REDDIT_SYSTEM_PROMPT },
+      { role: "user", content: userPrompt }
+    ];
+
+    const response = await openai.chat.completions.create({
       model: modelId,
-      contents: userPrompt,
-      config: {
-        systemInstruction: REDDIT_SYSTEM_PROMPT,
-        temperature: 0.9,
-        maxOutputTokens: 2048,
-      },
+      messages: messages as any,
+      temperature: 0.9,
+      max_tokens: 2048,
+      response_format: { type: "json_object" },
     });
 
-    const text = response.text ?? '';
-    let cleanedText = text.trim();
+    const text = response.choices[0]?.message?.content ?? '{}';
     
-    // Most robust extraction: find first '{' and last '}'
-    const firstBrace = text.indexOf('{');
-    const lastBrace = text.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      cleanedText = text.substring(firstBrace, lastBrace + 1);
-    }
-
-    // Strip invisible characters and potential double BOMs
-    cleanedText = cleanedText.replace(/[\u200B-\u200D\uFEFF]/g, '');
-
     let parsed;
     try {
-      parsed = JSON.parse(cleanedText);
+      parsed = JSON.parse(text);
     } catch (e: any) {
       return NextResponse.json({
         success: false,
-        error: `Parse failed: ${e.message}. First 20 chars: "${cleanedText.substring(0, 20)}"`,
+        error: `Parse failed: ${e.message}`,
         raw: text,
       }, { status: 400 });
     }
@@ -234,8 +231,7 @@ Deeply adapt your tone, vocabulary, formatting, and post length to match what pe
     return NextResponse.json({ success: true, data: parsed });
   } catch (error: unknown) {
     console.error('Reddit generation error:', error);
-    const message =
-      error instanceof Error ? error.message : 'Generation failed';
+    const message = error instanceof Error ? error.message : 'Generation failed';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

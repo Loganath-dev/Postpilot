@@ -582,20 +582,24 @@
 /* Responsive */
 @media (max-width: 768px) {
   .toneGrid,
-  .platformGrid {
+  .platformGrid,
+  .topTabs {
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    justify-content: flex-start;
   }
 
   .toneGrid::-webkit-scrollbar,
-  .platformGrid::-webkit-scrollbar {
+  .platformGrid::-webkit-scrollbar,
+  .topTabs::-webkit-scrollbar {
     display: none;
   }
 
   .toneBtn,
-  .platformBtn {
+  .platformBtn,
+  .topTab {
     white-space: nowrap;
     flex-shrink: 0;
   }
