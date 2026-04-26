@@ -12,22 +12,23 @@ export default function PricingSection() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
-    const supabase = createClient();
-    const fetchUser = async () => {
+    const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
     };
-    fetchUser();
+    
+    checkUser();
 
-    // Listen for auth state changes (login/logout)
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [supabase.auth]);
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {

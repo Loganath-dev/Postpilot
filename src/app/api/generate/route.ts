@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
+import { createClient as createServerClient } from '@/utils/supabase/server';
 
-// Initialize Supabase admin client for backend operations
+// Supabase admin client (bypasses RLS)
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -76,79 +77,19 @@ SECTION 4: PLATFORM-SPECIFIC MASTERY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ### LINKEDIN POST
-
-ALGORITHM INSIGHT: LinkedIn rewards dwell time (people pausing to read) and comments. Posts that trigger self-reflection or debate get pushed to 10x more feeds.
-
-PROVEN FORMATS (rotate between these):
-A) BROETRY — Short lines. Aggressive white space. Each line is a micro-thought. Opens with a one-liner that stops the scroll.
-B) CONTRARIAN TAKE — Challenge something everyone accepts. "Unpopular opinion:" or "Everyone says X. They're wrong."
-C) FAILURE STORY — Vulnerable admission of something that went wrong. What you learned. Raw, not polished.
-D) FRAMEWORK POST — Share a mental model or system. "The 3-part framework I use to..." — but make it feel discovered, not taught.
-
 STRUCTURE:
-- Line 1-2: The HOOK. This is everything. Must create an open loop or emotional jolt.
+- Line 1-2: The HOOK. Must create an open loop or emotional jolt.
 - Body: 1-2 sentences per paragraph MAX. Aggressive line breaks. 150-300 words total.
 - Final line: A specific question that invites the reader to share their own experience.
 
-EXAMPLE OF EXCELLENT LINKEDIN OUTPUT:
----
-I got fired on a Tuesday.
-
-No warning. No PIP. Just a 10-minute call and a Slack channel that disappeared.
-
-I spent the next 3 days applying to 40+ jobs.
-Got 2 callbacks.
-Both ghosted me.
-
-Here's what nobody tells you about getting fired:
-
-The shame hits before the fear does. You don't worry about money first — you worry about what people will think.
-
-It took me 6 weeks to realize something:
-
-I wasn't mourning the job. I was mourning the identity I'd built around it.
-
-The moment I stopped introducing myself as "I work at [Company]" and started saying "I'm building [Thing]" — everything shifted.
-
-Not because the thing was successful. Because I finally owned my own story.
-
-If you've ever been let go — what's the one thing you wish someone had told you?
----
-
 ### X (TWITTER) SINGLE POST
-
 CONSTRAINT: Strictly under 280 characters. Count carefully.
 
-ALGORITHM INSIGHT: X rewards replies and quote tweets. Posts that are slightly incomplete (curiosity gap) or mildly controversial drive the most engagement.
-
-PROVEN PATTERNS:
-A) BOLD CLAIM — A strong opinion stated as fact. "The best marketing strategy is one most people are too scared to try."
-B) CURIOSITY GAP — Promise value without delivering it fully. "I spent 3 years building the wrong product. The fix took 15 minutes."
-C) OBSERVATION — Notice something everyone feels but nobody says. "Most LinkedIn posts are just people typing their therapy session."
-D) REFRAME — Take a common belief and flip it. "You don't need more leads. You need fewer, better ones."
-
-EXAMPLE OF EXCELLENT TWITTER OUTPUT:
----
-Your first 10 customers will teach you more than your first 10,000 page views ever will.
----
-
 ### X (TWITTER) THREAD
-
 OPTIMAL LENGTH: 5-7 tweets. Never fewer than 4, never more than 9.
-
-STRUCTURE:
-- Tweet 1 (THE HOOK): Must create massive curiosity or promise outsized value. "I spent 200 hours analyzing [X]. Here's what 99% of people get wrong:" — use specific numbers.
-- Tweets 2-6 (THE BODY): Each tweet is a self-contained insight. Use numbering (1/, 2/). Each tweet should be valuable even if read in isolation. No filler tweets. No "Let me explain..." transitions.
-- Final Tweet (THE CLOSER): Summarize the key takeaway in one powerful line. Optionally add a soft CTA: "If this was useful, follow me for more breakdowns like this."
-
-EXAMPLE OF EXCELLENT THREAD HOOK:
----
-I bootstrapped a SaaS to $8k MRR in 5 months.
-
-No audience. No funding. No luck.
-
-Here are the 6 things that actually moved the needle (not the stuff that looks good on Twitter):
----
+- Tweet 1 (THE HOOK): Must create massive curiosity or promise outsized value.
+- Tweets 2-6 (THE BODY): Each tweet is a self-contained insight.
+- Final Tweet (THE CLOSER): Summarize the key takeaway in one powerful line.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SECTION 5: IMAGE INPUT PROTOCOL
@@ -161,20 +102,7 @@ When the user uploads an image (screenshot, notes, whiteboard, etc.):
 4. Apply the full transformation pipeline above
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 6: SELF-VERIFICATION (DO THIS BEFORE OUTPUTTING)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Before generating your final output, mentally verify:
-[ ] Does the LinkedIn post open with a genuine scroll-stopper, not a generic intro?
-[ ] Is the Twitter post UNDER 280 characters? (Count the characters)
-[ ] Does the thread have 5-7 tweets, each one a standalone value unit?
-[ ] Would a human actually post this? Does it sound like a real person?
-[ ] Did I avoid EVERY banned word and pattern?
-[ ] Did I TRANSFORM the input, not just rephrase it?
-[ ] Are the alternative hooks structurally different from each other (not just rewording)?
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 7: OUTPUT FORMAT
+SECTION 6: OUTPUT FORMAT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Return ONLY valid JSON. No markdown code fences. No backticks. No explanation text. Just the raw JSON object.
@@ -198,43 +126,50 @@ Use \\n for line breaks within strings.
 
 export async function POST(req: NextRequest) {
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    
-    const body = await req.json();
-    const { input, platform, tone, writingDNA, image, plan = 'free' } = body;
-    
-    // ANONYMOUS IP TRACKING LOGIC
-    let ipAddress = 'unknown';
-    if (plan === 'free') {
-      // x-forwarded-for works in production (Vercel), fallback to localhost IP for dev
-      ipAddress = req.headers.get('x-forwarded-for') 
-        || req.headers.get('x-real-ip') 
-        || '127.0.0.1';
-      
-      // Clean up IP string if multiple are provided by proxies
-      if (ipAddress.includes(',')) {
-        ipAddress = ipAddress.split(',')[0].trim();
-      }
+    // 1. AUTH CHECK — user must be logged in
+    const supabase = await createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-      // Check current usage in Supabase
-      const { data: usageData } = await supabaseAdmin
-        .from('anonymous_usage')
-        .select('tokens_used')
-        .eq('ip_address', ipAddress)
-        .maybeSingle();
-
-      if (usageData && usageData.tokens_used >= 10) {
-        return NextResponse.json(
-          { error: 'Free limit reached. Please sign up for an account to continue generating content.' },
-          { status: 403 }
-        );
-      }
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Please sign up or log in to generate content.', requireAuth: true },
+        { status: 401 }
+      );
     }
 
-    // Model selection based on user plan:
-    // Free -> gpt-4o-mini
-    // Pro/Starter -> gpt-4o
-    const modelId = plan === 'free' ? 'gpt-4o-mini' : 'gpt-4o';
+    // 2. CHECK USER TOKEN BALANCE in profiles table
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('tokens, plan_type')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    // If no profile exists yet, create one with free plan defaults (10 tokens)
+    if (!profile) {
+      await supabaseAdmin.from('profiles').insert({
+        id: user.id,
+        plan_type: 'free',
+        tokens: 10,
+      });
+    }
+
+    const currentTokens = profile?.tokens ?? 10;
+    const planType = profile?.plan_type ?? 'free';
+
+    if (currentTokens < 10) {
+      return NextResponse.json(
+        { error: 'You have run out of tokens. Please upgrade your plan to continue generating content.', requireUpgrade: true },
+        { status: 403 }
+      );
+    }
+
+    // 3. SETUP OPENAI
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const body = await req.json();
+    const { input, platform, tone, writingDNA, image } = body;
+
+    const modelId = planType === 'free' ? 'gpt-4o-mini' : 'gpt-4o';
 
     if ((!input || input.trim().length === 0) && !image) {
       return NextResponse.json(
@@ -262,16 +197,14 @@ Generate content ONLY for the "${platform}" key in your JSON. Set other platform
       userPrompt += `\n\nTARGET: All platforms. Generate optimized, platform-native content for LinkedIn, X Post, and Thread simultaneously.`;
     }
 
-    // Inject rich tone definition instead of a bare word
     const toneKey = tone || 'default';
     const toneInstruction = TONE_DEFINITIONS[toneKey] || TONE_DEFINITIONS['default'];
     userPrompt += `\n\n${toneInstruction}`;
 
     if (writingDNA && writingDNA.trim().length > 0) {
-      userPrompt += `\n\n━━ WRITING DNA SAMPLES (HIGHEST PRIORITY — match this voice exactly) ━━\n${writingDNA}\n━━ END DNA ━━\nYou MUST clone the style, rhythm, vocabulary, and emotional register from these samples. The user should not be able to tell the difference between their own writing and your output.`;
+      userPrompt += `\n\n━━ WRITING DNA SAMPLES (HIGHEST PRIORITY — match this voice exactly) ━━\n${writingDNA}\n━━ END DNA ━━\nYou MUST clone the style, rhythm, vocabulary, and emotional register from these samples.`;
     }
 
-    // Build the messages array for OpenAI
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const messages: any[] = [
       { role: "system", content: SYSTEM_PROMPT }
@@ -302,7 +235,7 @@ Generate content ONLY for the "${platform}" key in your JSON. Set other platform
     });
 
     const text = response.choices[0]?.message?.content ?? '{}';
-    
+
     let parsed;
     try {
       parsed = JSON.parse(text);
@@ -314,31 +247,11 @@ Generate content ONLY for the "${platform}" key in your JSON. Set other platform
       }, { status: 400 });
     }
 
-    // RECORD ANONYMOUS USAGE
-    if (plan === 'free' && ipAddress !== 'unknown') {
-      const { data: existingData } = await supabaseAdmin
-        .from('anonymous_usage')
-        .select('tokens_used')
-        .eq('ip_address', ipAddress)
-        .single();
-
-      if (existingData) {
-        await supabaseAdmin
-          .from('anonymous_usage')
-          .update({ 
-            tokens_used: existingData.tokens_used + 10,
-            last_used: new Date().toISOString()
-          })
-          .eq('ip_address', ipAddress);
-      } else {
-        await supabaseAdmin
-          .from('anonymous_usage')
-          .insert({
-            ip_address: ipAddress,
-            tokens_used: 10
-          });
-      }
-    }
+    // 4. DEDUCT 10 TOKENS after successful generation
+    await supabaseAdmin
+      .from('profiles')
+      .update({ tokens: currentTokens - 10 })
+      .eq('id', user.id);
 
     return NextResponse.json({ success: true, data: parsed });
   } catch (error: unknown) {

@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import styles from './generate.module.css';
+import { createClient } from '@/utils/supabase/client';
 
 const PostToImage = dynamic(() => import('@/components/PostToImage'), { ssr: false });
 const RedditGenerator = dynamic(() => import('@/components/RedditGenerator'), { ssr: false });
@@ -37,6 +39,22 @@ export default function GeneratePage() {
   const [tone, setTone] = useState('default');
   const [platform, setPlatform] = useState('all');
   const [loading, setLoading] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
+  const router = useRouter();
+
+  // Auth guard — redirect to login if not signed in
+  useEffect(() => {
+    const supabase = createClient();
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+      setAuthChecking(false);
+    };
+    checkAuth();
+  }, [router]);
   const [result, setResult] = useState<GeneratedContent | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
@@ -130,6 +148,14 @@ export default function GeneratePage() {
     navigator.clipboard.writeText(text);
     setCopied(id);
     setTimeout(() => setCopied(null), 2000);
+  }
+
+  if (authChecking) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p>Loading...</p>
+      </div>
+    );
   }
 
   return (
