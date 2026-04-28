@@ -149,11 +149,11 @@ export async function POST(req: NextRequest) {
       await supabaseAdmin.from('profiles').insert({
         id: user.id,
         plan_type: 'free',
-        tokens: 10,
+        tokens: 50,
       });
     }
 
-    const currentTokens = profile?.tokens ?? 10;
+    const currentTokens = profile?.tokens ?? 50;
     const planType = profile?.plan_type ?? 'free';
 
     if (currentTokens < 10) {
@@ -254,8 +254,16 @@ Generate content ONLY for the "${platform}" key in your JSON. Set other platform
       .eq('id', user.id);
 
     return NextResponse.json({ success: true, data: parsed });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Generation error:', error);
+    
+    // Catch Supabase missing column error
+    if (error.code === '42703' || error.message?.includes('column "plan_type"')) {
+      return NextResponse.json({ 
+        error: 'Database not set up correctly! You must run the SQL commands in Supabase to add the plan_type and tokens columns.' 
+      }, { status: 500 });
+    }
+
     const message = error instanceof Error ? error.message : 'Generation failed';
     return NextResponse.json({ error: message }, { status: 500 });
   }

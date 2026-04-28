@@ -38,12 +38,23 @@ export async function POST(req: NextRequest) {
     }
 
     // Payment is valid! Upgrade the user's plan.
-    const tokensToAdd = planId === 'pro' ? 5000 : 2000;
-    
-    // Check if profile exists
+    // Determine token bonus based on selected plan
+    let tokensToAdd = 0;
+    if (planId === 'pro') {
+      // Pro plan – generous token package (e.g., 200 tokens = 20 generations)
+      tokensToAdd = 200;
+    } else if (planId === 'starter') {
+      // Starter plan – enough for 5 extra generations (5 * 10 = 50 tokens)
+      tokensToAdd = 50;
+    } else {
+      // Fallback – keep existing behavior for unknown planIds
+      tokensToAdd = planId === 'pro' ? 5000 : 2000;
+    }
+
+    // Update or create the profile with the new plan and token balance
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('*')
+      .select('tokens, plan_type')
       .eq('id', user.id)
       .single();
 
@@ -52,7 +63,7 @@ export async function POST(req: NextRequest) {
         .from('profiles')
         .update({
           plan_type: planId,
-          tokens: tokensToAdd,
+          tokens: (profile.tokens ?? 0) + tokensToAdd,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -66,7 +77,14 @@ export async function POST(req: NextRequest) {
         });
     }
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    // Fetch the updated profile to send back to the client
+    const { data: updatedProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('tokens, plan_type')
+      .eq('id', user.id)
+      .single();
+
+    return NextResponse.json({ success: true, profile: updatedProfile }, { status: 200 });
   } catch (error: any) {
     console.error('Error verifying Razorpay payment:', error);
     return NextResponse.json(

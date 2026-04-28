@@ -121,12 +121,20 @@ export default function RedditGenerator() {
     setResult(null);
 
     try {
+      // Detect length request in the user input (case‑insensitive)
+      const lengthChoice = /\bshort\b/i.test(input)
+        ? 'short'
+        : /\blong\b/i.test(input)
+        ? 'long'
+        : null;
+
       const res = await fetch('/api/reddit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           input: input.trim(),
           subreddit: subreddit.trim(),
+          lengthChoice,
         }),
       });
 

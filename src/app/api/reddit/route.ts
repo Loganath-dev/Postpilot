@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
       await supabaseAdmin.from('profiles').insert({
         id: user.id,
         plan_type: 'free',
-        tokens: 10,
+        tokens: 50,
       });
     }
 
@@ -149,9 +149,17 @@ export async function POST(req: NextRequest) {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const body = await req.json();
-    const { input, subreddit } = body;
+    const { input, subreddit, lengthChoice } = body;
 
     const modelId = planType === 'free' ? 'gpt-4o-mini' : 'gpt-4o';
+
+    // Append length instruction based on user request (short/long)
+    let lengthInstruction = '';
+    if (lengthChoice === 'short') {
+      lengthInstruction = '\nMake it short (≈150 words).';
+    } else if (lengthChoice === 'long') {
+      lengthInstruction = '\nMake it long (≈500 words).';
+    }
 
     if (!input || input.trim().length === 0) {
       return NextResponse.json(
