@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const currentTokens = profile?.tokens ?? 10;
+    const currentTokens = profile?.tokens ?? 50;
     const planType = profile?.plan_type ?? 'free';
 
     if (currentTokens < 10) {

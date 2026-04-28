@@ -34,8 +34,14 @@ export default function Signup() {
       setError(error.message);
       setLoading(false);
     } else {
-      if (data.session) {
+      if (data.session && data.session.user) {
         // Email confirmation is disabled, user is logged in
+        // Create a free profile for the new user
+        await supabase.from('profiles').upsert({
+          id: data.session.user.id,
+          plan_type: 'free',
+          tokens: 50,
+        }, { onConflict: 'id' });
         router.push('/generate');
       } else {
         // Email confirmation is required

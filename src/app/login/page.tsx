@@ -28,6 +28,15 @@ export default function Login() {
       setError(error.message);
       setLoading(false);
     } else {
+      // Ensure user has a profile row (safety net)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          plan_type: 'free',
+          tokens: 50,
+        }, { onConflict: 'id', ignoreDuplicates: true });
+      }
       router.push('/generate');
     }
   };
