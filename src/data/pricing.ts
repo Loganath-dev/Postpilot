@@ -15,7 +15,7 @@ export const pricingTiers: PricingTier[] = [
     name: "Free",
     price: 0,
     annualPrice: 0,
-    description: "Try all tools instantly — no account needed. 10 tokens to explore.",
+    description: "Try all tools instantly — no account needed. 50 tokens to explore.",
     popular: false,
     features: [
       { name: "Tokens", included: true, detail: "10 Tokens (one-time)" },

@@ -10,7 +10,7 @@ import { createClient } from '@/utils/supabase/client';
 export default function PricingSection() {
   const [annual, setAnnual] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -44,83 +44,83 @@ export default function PricingSection() {
     });
   };
 
-  const handlePayment = async (tier: any) => {
-    if (!user) {
-      router.push('/signup');
+    const handlePayment = async (tier: any) => {
+  // Use the user from component state – it reflects the latest auth session
+  if (!user) {
+    router.push('/signup');
+    return;
+  }
+
+  // Free plan – no payment needed
+  if (tier.price === 0) {
+    router.push('/generate');
+    return;
+  }
+
+  setLoadingTier(tier.id);
+  try {
+    const res = await loadRazorpayScript();
+    if (!res) {
+      alert('Razorpay SDK failed to load. Are you online?');
+      setLoadingTier(null);
       return;
     }
 
-    if (tier.price === 0) {
-      router.push('/generate');
-      return;
-    }
+    // 1. Create Order on Backend
+    const amount = annual ? tier.annualPrice : tier.price;
+    const orderRes = await fetch('/api/razorpay/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount, planId: tier.id }),
+    });
+    const orderData = await orderRes.json();
+    if (!orderRes.ok) throw new Error(orderData.error);
 
-    setLoading(true);
-    try {
-      const res = await loadRazorpayScript();
-      if (!res) {
-        alert('Razorpay SDK failed to load. Are you online?');
-        setLoading(false);
-        return;
-      }
+    // 2. Open Razorpay Checkout
+    const options = {
+      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      amount: amount * 100,
+      currency: 'INR',
+      name: 'PostPilot',
+      description: `${tier.name} Plan Upgrade`,
+      order_id: orderData.orderId,
+      handler: async function (response: any) {
+        // 3. Verify Payment on Backend
+        const verifyRes = await fetch('/api/razorpay/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            planId: tier.id,
+          }),
+        });
+        if (verifyRes.ok) {
+          alert('Payment Successful! Your account has been upgraded.');
+          // Refresh Supabase session to get updated profile
+          await supabase.auth.refreshSession();
+          router.push('/dashboard');
+        } else {
+          const err = await verifyRes.json();
+          alert('Payment verification failed: ' + (err.error || 'unknown error'));
+        }
+      },
+      prefill: {
+        email: user.email,
+      },
+      theme: { color: '#3b82f6' },
+    };
 
-      // 1. Create Order on Backend
-      const amount = annual ? tier.annualPrice : tier.price;
-      const orderRes = await fetch('/api/razorpay/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, planId: tier.id }),
-      });
-      const orderData = await orderRes.json();
-
-      if (!orderRes.ok) throw new Error(orderData.error);
-
-      // 2. Open Razorpay Checkout
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: amount * 100,
-        currency: 'INR',
-        name: 'PostPilot',
-        description: `${tier.name} Plan Upgrade`,
-        order_id: orderData.orderId,
-        handler: async function (response: any) {
-          // 3. Verify Payment on Backend
-          const verifyRes = await fetch('/api/razorpay/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              planId: tier.id,
-            }),
-          });
-          
-          if (verifyRes.ok) {
-            alert('Payment Successful! Your account has been upgraded.');
-            router.push('/dashboard');
-          } else {
-            alert('Payment verification failed.');
-          }
-        },
-        prefill: {
-          email: user.email,
-        },
-        theme: {
-          color: '#3b82f6',
-        },
-      };
-
-      const paymentObject = new (window as any).Razorpay(options);
-      paymentObject.open();
-
-    } catch (error: any) {
-      console.error(error);
-      alert(error.message || 'Something went wrong.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const paymentObject = new (window as any).Razorpay(options);
+    paymentObject.open();
+  } catch (error: any) {
+    console.error(error);
+    alert(error.message || 'Something went wrong.');
+  } finally {
+    setLoadingTier(null);
+  }
+};
 
   return (
     <section className={`section ${styles.pricing}`} id="pricing">
@@ -182,11 +182,11 @@ export default function PricingSection() {
 
               <button 
                 onClick={() => handlePayment(tier)}
-                disabled={loading}
+                disabled={loadingTier !== null}
                 className={`btn ${tier.popular ? 'btn-primary' : 'btn-secondary'} ${styles.ctaBtn}`}
                 style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
               >
-                {loading ? 'Processing...' : tier.cta}
+                {loadingTier === tier.id ? 'Processing...' : tier.cta}
               </button>
 
             </div>
