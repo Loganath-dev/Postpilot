@@ -44,7 +44,7 @@ export const pricingTiers: PricingTier[] = [
       { name: "Tweet-to-Image", included: true },
       { name: "Photo / Screenshot to Post", included: true },
       { name: "Platform", included: true, detail: "All Platforms" },
-      { name: "Overage Tokens", included: true, detail: "Buy extra tokens if limit exceeded" },
+      { name: "Overage Tokens", included: true, detail: "$5 per 1,000 tokens" },
     ],
     cta: "Get Starter"
   },
@@ -63,7 +63,7 @@ export const pricingTiers: PricingTier[] = [
       { name: "Tweet-to-Image", included: true },
       { name: "Photo / Screenshot to Post", included: true },
       { name: "Platform", included: true, detail: "All Platforms" },
-      { name: "Overage Tokens", included: true, detail: "Buy extra tokens if 5,000 exceeded" },
+      { name: "Overage Tokens", included: true, detail: "$5 per 1,000 tokens" },
       { name: "Support", included: true, detail: "Priority Support" }
     ],
     cta: "Go Pro"

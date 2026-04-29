@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     // amount is expected in smallest currency unit (paise for INR)
     const options = {
       amount: Math.round(amount * 100),
-      currency: 'INR',
+      currency: 'USD',
       receipt: `receipt_${user.id.substring(0, 8)}_${Date.now()}`,
       notes: {
         userId: user.id,

@@ -80,7 +80,7 @@ export default function PricingSection() {
     const options = {
       key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
       amount: amount * 100,
-      currency: 'INR',
+      currency: 'USD',
       name: 'PostPilot',
       description: `${tier.name} Plan Upgrade`,
       order_id: orderData.orderId,
@@ -156,14 +156,14 @@ export default function PricingSection() {
               <div className={styles.cardHeader}>
                 <h3 className={styles.tierName}>{tier.name}</h3>
                 <div className={styles.price}>
-                  <span className={styles.currency}>₹</span>
+                  <span className={styles.currency}>$</span>
                   <span className={styles.amount}>
-                    {tier.price === 0 ? '0' : annual ? Math.round(tier.annualPrice / 12) : tier.price}
+                    {tier.price === 0 ? '0' : annual ? (tier.annualPrice / 12).toFixed(2) : tier.price}
                   </span>
                   <span className={styles.period}>/mo</span>
                 </div>
                 {annual && tier.price > 0 && (
-                  <div className={styles.annualTotal}>₹{tier.annualPrice}/year</div>
+                  <div className={styles.annualTotal}>${tier.annualPrice}/year</div>
                 )}
                 <p className={styles.tierDesc}>{tier.description}</p>
               </div>
