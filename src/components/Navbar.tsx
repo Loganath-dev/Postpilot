@@ -21,21 +21,31 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const [profile, setProfile] = useState<any>(null);
+
   useEffect(() => {
+    const fetchProfile = async (userId: string) => {
+      const { data } = await supabase.from('profiles').select('tokens, plan_type').eq('id', userId).single();
+      setProfile(data);
+    };
+
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
+      if (session?.user) fetchProfile(session.user.id);
     };
     
     checkUser();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user || null);
+      if (session?.user) fetchProfile(session.user.id);
+      else setProfile(null);
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase.auth]);
+  }, [supabase]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -72,6 +82,13 @@ export default function Navbar() {
           <div className={styles.authGroup}>
             {user ? (
               <>
+                <div className={styles.tokenDisplay}>
+                  <span className={styles.tokenIcon}>🪙</span>
+                  <span className={styles.tokenCount}>{profile?.tokens ?? '...'} tokens</span>
+                  {profile?.plan_type && profile.plan_type !== 'free' && (
+                    <span className={styles.planBadge}>{profile.plan_type}</span>
+                  )}
+                </div>
                 <Link href="/generate" className={styles.link} onClick={() => setMobileOpen(false)}>
                   Dashboard
                 </Link>
