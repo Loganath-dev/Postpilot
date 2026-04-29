@@ -41,14 +41,14 @@ export async function POST(req: NextRequest) {
     // Determine token bonus based on selected plan
     let tokensToAdd = 0;
     if (planId === 'pro') {
-      // Pro plan – generous token package (e.g., 200 tokens = 20 generations)
-      tokensToAdd = 200;
+      // Pro plan – 5,000 tokens included
+      tokensToAdd = 5000;
     } else if (planId === 'starter') {
-      // Starter plan – enough for 5 extra generations (5 * 10 = 50 tokens)
-      tokensToAdd = 50;
+      // Starter plan – 2,000 tokens included
+      tokensToAdd = 2000;
     } else {
-      // Fallback – keep existing behavior for unknown planIds
-      tokensToAdd = planId === 'pro' ? 5000 : 2000;
+      // Default fallback
+      tokensToAdd = 50;
     }
 
     // Update or create the profile with the new plan and token balance
