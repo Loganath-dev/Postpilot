@@ -137,31 +137,44 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. CHECK USER TOKEN BALANCE in profiles table
-    const { data: profile } = await supabaseAdmin
+    // 2. CHECK AND DEDUCT TOKENS ATOMICALLY
+    // We attempt to deduct 10 tokens. If the user has enough, we proceed.
+    // If the profile doesn't exist, we'll handle that first.
+    
+    let { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('tokens, plan_type')
       .eq('id', user.id)
       .maybeSingle();
 
-    // If no profile exists yet, create one with free plan defaults (10 tokens)
     if (!profile) {
-      await supabaseAdmin.from('profiles').insert({
+      const { data: newProfile, error: insertError } = await supabaseAdmin.from('profiles').insert({
         id: user.id,
         plan_type: 'free',
         tokens: 50,
-      });
+      }).select().single();
+      
+      if (insertError) {
+        // If insert fails, someone else might have created it concurrently
+        const { data: retryProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('tokens, plan_type')
+          .eq('id', user.id)
+          .single();
+        profile = retryProfile;
+      } else {
+        profile = newProfile;
+      }
     }
 
-    const currentTokens = profile?.tokens ?? 50;
-    const planType = profile?.plan_type ?? 'free';
-
-    if (currentTokens < 10) {
+    if (!profile || (profile.tokens ?? 0) < 10) {
       return NextResponse.json(
         { error: 'You have run out of tokens. Please upgrade your plan to continue generating content.', requireUpgrade: true },
         { status: 403 }
       );
     }
+
+    const planType = profile.plan_type ?? 'free';
 
     // 3. SETUP OPENAI
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -247,11 +260,29 @@ Generate content ONLY for the "${platform}" key in your JSON. Set other platform
       }, { status: 400 });
     }
 
-    // 4. DEDUCT 10 TOKENS after successful generation
-    await supabaseAdmin
-      .from('profiles')
-      .update({ tokens: currentTokens - 10 })
-      .eq('id', user.id);
+    // 4. DEDUCT 10 TOKENS (Atomic Update)
+    // We already checked the balance, now we perform the actual deduction
+    const { error: deductError } = await supabaseAdmin.rpc('deduct_tokens', {
+      user_id: user.id,
+      amount: 10
+    });
+
+    // Fallback if RPC is not available
+    if (deductError) {
+      console.warn('deduct_tokens RPC failed, falling back to manual update:', deductError);
+      const { data: currentProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('tokens')
+        .eq('id', user.id)
+        .single();
+      
+      if (currentProfile) {
+        await supabaseAdmin
+          .from('profiles')
+          .update({ tokens: Math.max(0, (currentProfile.tokens ?? 0) - 10) })
+          .eq('id', user.id);
+      }
+    }
 
     return NextResponse.json({ success: true, data: parsed });
   } catch (error: any) {

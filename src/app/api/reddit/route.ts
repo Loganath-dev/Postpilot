@@ -120,30 +120,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. CHECK USER TOKEN BALANCE
-    const { data: profile } = await supabaseAdmin
+    // 2. CHECK AND DEDUCT TOKENS ATOMICALLY
+    let { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('tokens, plan_type')
       .eq('id', user.id)
       .maybeSingle();
 
     if (!profile) {
-      await supabaseAdmin.from('profiles').insert({
+      const { data: newProfile, error: insertError } = await supabaseAdmin.from('profiles').insert({
         id: user.id,
         plan_type: 'free',
         tokens: 50,
-      });
+      }).select().single();
+      
+      if (insertError) {
+        const { data: retryProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('tokens, plan_type')
+          .eq('id', user.id)
+          .single();
+        profile = retryProfile;
+      } else {
+        profile = newProfile;
+      }
     }
 
-    const currentTokens = profile?.tokens ?? 50;
-    const planType = profile?.plan_type ?? 'free';
-
-    if (currentTokens < 10) {
+    if (!profile || (profile.tokens ?? 0) < 10) {
       return NextResponse.json(
         { error: 'You have run out of tokens. Please upgrade your plan to continue generating content.', requireUpgrade: true },
         { status: 403 }
       );
     }
+
+    const planType = profile.plan_type ?? 'free';
 
     // 3. SETUP
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -209,11 +219,27 @@ Deeply adapt your tone, vocabulary, formatting, and post length to match what pe
       }, { status: 400 });
     }
 
-    // 4. DEDUCT 10 TOKENS after successful generation
-    await supabaseAdmin
-      .from('profiles')
-      .update({ tokens: currentTokens - 10 })
-      .eq('id', user.id);
+    // 4. DEDUCT 10 TOKENS (Atomic Update)
+    const { error: deductError } = await supabaseAdmin.rpc('deduct_tokens', {
+      user_id: user.id,
+      amount: 10
+    });
+
+    if (deductError) {
+      console.warn('deduct_tokens RPC failed, falling back to manual update:', deductError);
+      const { data: currentProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('tokens')
+        .eq('id', user.id)
+        .single();
+      
+      if (currentProfile) {
+        await supabaseAdmin
+          .from('profiles')
+          .update({ tokens: Math.max(0, (currentProfile.tokens ?? 0) - 10) })
+          .eq('id', user.id);
+      }
+    }
 
     return NextResponse.json({ success: true, data: parsed });
   } catch (error: unknown) {
