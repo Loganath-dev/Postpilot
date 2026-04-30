@@ -62,21 +62,34 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (profile) {
-      await supabaseAdmin
-        .from('profiles')
-        .update({
-          plan_type: planId,
-          tokens: (profile.tokens ?? 0) + tokensToAdd,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+      // Add tokens only if the user is upgrading to a different plan and tokensToAdd > 0
+      if (profile.plan_type !== planId && tokensToAdd > 0) {
+        await supabaseAdmin
+          .from('profiles')
+          .update({
+            plan_type: planId,
+            tokens: (profile.tokens ?? 0) + tokensToAdd,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+      } else {
+        // Same plan or no token bonus – just ensure plan_type is up‑to‑date
+        await supabaseAdmin
+          .from('profiles')
+          .update({
+            plan_type: planId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+      }
     } else {
+      // No profile yet – create one, applying tokens only if a positive bonus exists
       await supabaseAdmin
         .from('profiles')
         .insert({
           id: user.id,
           plan_type: planId,
-          tokens: tokensToAdd,
+          tokens: tokensToAdd > 0 ? tokensToAdd : 0,
         });
     }
 
