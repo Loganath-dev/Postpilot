@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import styles from './PricingSection.module.css';
-import { pricingTiers } from '@/data/pricing';
+import { pricingTiers, type PricingTier } from '@/data/pricing';
 import { createClient } from '@/utils/supabase/client';
 
 export default function PricingSection() {
   // Filter out limited‑seat plans that have been sold out (seatsTotal <= 0)
-  const visibleTiers = pricingTiers.filter(t => !(t.seatsTotal && t.seatsTotal <= 0));
+  const visibleTiers = pricingTiers.filter(t => t.seatsTotal === undefined || t.seatsTotal > 0);
   const [annual, setAnnual] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
@@ -46,7 +46,7 @@ export default function PricingSection() {
     });
   };
 
-    const handlePayment = async (tier: any) => {
+  const handlePayment = async (tier: PricingTier) => {
   // Use the user from component state – it reflects the latest auth session
   if (!user) {
     router.push('/signup');
@@ -151,7 +151,7 @@ export default function PricingSection() {
         </div>
 
         <div className={styles.grid}>
-          {pricingTiers.map((tier) => (
+          {visibleTiers.map((tier) => (
             <div key={tier.id} className={`${styles.card} ${tier.popular ? styles.popular : ''}`} id={`pricing-${tier.id}`}>
               {tier.popular && <div className={styles.popularBadge}>Most Popular</div>}
 

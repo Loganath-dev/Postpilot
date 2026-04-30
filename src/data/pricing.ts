@@ -7,6 +7,7 @@ export interface PricingTier {
   popular: boolean;
   features: { name: string; included: boolean; detail?: string }[];
   cta: string;
+  seatsTotal?: number;
 }
 
 export const pricingTiers: PricingTier[] = [
