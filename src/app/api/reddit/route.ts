@@ -3,11 +3,7 @@ import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/utils/supabase/server';
 
-// Supabase admin client (bypasses RLS)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Supabase admin client initialization moved inside POST handler for fresh env vars
 
 const REDDIT_SYSTEM_PROMPT = `You are a 7-year Reddit veteran with 50k+ karma. You've spent thousands of hours in niche subreddits. You understand Reddit's culture at a cellular level — the sarcasm, the skepticism, the hatred of anything that smells like marketing.
 
@@ -119,6 +115,12 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Initialize Supabase admin client (bypasses RLS) inside handler for fresh env vars
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     // 2. CHECK AND DEDUCT TOKENS ATOMICALLY
     let { data: profile, error: profileError } = await supabaseAdmin
