@@ -121,13 +121,19 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. CHECK AND DEDUCT TOKENS ATOMICALLY
-    let { data: profile } = await supabaseAdmin
+    let { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('tokens, plan_type')
       .eq('id', user.id)
       .maybeSingle();
 
+    if (profileError) {
+      console.error('Error fetching profile:', profileError);
+      return NextResponse.json({ error: 'Failed to fetch user profile: ' + profileError.message }, { status: 500 });
+    }
+
     if (!profile) {
+      // If profile is missing, create it with 100 tokens
       const { data: newProfile, error: insertError } = await supabaseAdmin.from('profiles').insert({
         id: user.id,
         plan_type: 'free',
@@ -135,6 +141,8 @@ export async function POST(req: NextRequest) {
       }).select().single();
       
       if (insertError) {
+        console.error('Error creating profile:', insertError);
+        // Retry fetch in case of concurrent creation
         const { data: retryProfile } = await supabaseAdmin
           .from('profiles')
           .select('tokens, plan_type')
@@ -146,9 +154,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!profile || (profile.tokens ?? 0) < 10) {
+    // Token cost per generation
+    const GENERATION_COST = 10;
+    const currentTokens = profile?.tokens ?? 0;
+
+    if (!profile || currentTokens < GENERATION_COST) {
       return NextResponse.json(
-        { error: 'You have run out of tokens. Please upgrade your plan to continue generating content.', requireUpgrade: true },
+        { 
+          error: `You have run out of tokens (Current: ${currentTokens}, Required: ${GENERATION_COST}). Please upgrade your plan to continue generating content.`, 
+          requireUpgrade: true 
+        },
         { status: 403 }
       );
     }
