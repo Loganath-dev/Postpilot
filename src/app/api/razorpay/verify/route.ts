@@ -46,8 +46,11 @@ export async function POST(req: NextRequest) {
     } else if (planId === 'starter') {
       // Starter plan – 2,000 tokens included
       tokensToAdd = 2000;
+    } else if (planId === 'lifetime') {
+      // Lifetime deal – 8,000 tokens one‑time
+      tokensToAdd = 8000;
     } else {
-      // Default fallback
+      // Default fallback for unknown planIds
       tokensToAdd = 50;
     }
 

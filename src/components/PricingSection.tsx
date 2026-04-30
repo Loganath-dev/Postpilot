@@ -8,6 +8,8 @@ import { pricingTiers } from '@/data/pricing';
 import { createClient } from '@/utils/supabase/client';
 
 export default function PricingSection() {
+  // Filter out limited‑seat plans that have been sold out (seatsTotal <= 0)
+  const visibleTiers = pricingTiers.filter(t => !(t.seatsTotal && t.seatsTotal <= 0));
   const [annual, setAnnual] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loadingTier, setLoadingTier] = useState<string | null>(null);

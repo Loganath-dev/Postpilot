@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
       const { data: newProfile, error: insertError } = await supabaseAdmin.from('profiles').insert({
         id: user.id,
         plan_type: 'free',
-        tokens: 50,
+        tokens: 100,
       }).select().single();
       
       if (insertError) {
@@ -167,7 +167,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!profile || (profile.tokens ?? 0) < 10) {
+    // Token cost per generation
+    const GENERATION_COST = 10;
+    if (!profile || (profile.tokens ?? 0) < GENERATION_COST) {
       return NextResponse.json(
         { error: 'You have run out of tokens. Please upgrade your plan to continue generating content.', requireUpgrade: true },
         { status: 403 }

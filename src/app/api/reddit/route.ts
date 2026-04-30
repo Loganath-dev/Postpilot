@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
       const { data: newProfile, error: insertError } = await supabaseAdmin.from('profiles').insert({
         id: user.id,
         plan_type: 'free',
-        tokens: 50,
+        tokens: 100,
       }).select().single();
       
       if (insertError) {
