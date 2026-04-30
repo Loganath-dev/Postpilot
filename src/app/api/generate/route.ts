@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
         plan_type: 'free',
         tokens: 100,
       }).select().single();
-      
+
       if (insertError) {
         console.error('Error creating profile:', insertError);
         // Retry fetch in case of concurrent creation
@@ -174,12 +174,12 @@ export async function POST(req: NextRequest) {
     // Token cost per generation
     const GENERATION_COST = 10;
     const currentTokens = profile?.tokens ?? 0;
-    
+
     if (!profile || currentTokens < GENERATION_COST) {
       return NextResponse.json(
-        { 
-          error: `You have run out of tokens (Current: ${currentTokens}, Required: ${GENERATION_COST}). Please upgrade your plan to continue generating content.`, 
-          requireUpgrade: true 
+        {
+          error: `You have run out of tokens (Current: ${currentTokens}, Required: ${GENERATION_COST}). Please upgrade your plan to continue generating content.`,
+          requireUpgrade: true
         },
         { status: 403 }
       );
@@ -286,7 +286,7 @@ Generate content ONLY for the "${platform}" key in your JSON. Set other platform
         .select('tokens')
         .eq('id', user.id)
         .single();
-      
+
       if (currentProfile) {
         await supabaseAdmin
           .from('profiles')
@@ -298,11 +298,11 @@ Generate content ONLY for the "${platform}" key in your JSON. Set other platform
     return NextResponse.json({ success: true, data: parsed });
   } catch (error: any) {
     console.error('Generation error:', error);
-    
+
     // Catch Supabase missing column error
     if (error.code === '42703' || error.message?.includes('column "plan_type"')) {
-      return NextResponse.json({ 
-        error: 'Database not set up correctly! You must run the SQL commands in Supabase to add the plan_type and tokens columns.' 
+      return NextResponse.json({
+        error: 'Database not set up correctly! You must run the SQL commands in Supabase to add the plan_type and tokens columns.'
       }, { status: 500 });
     }
 

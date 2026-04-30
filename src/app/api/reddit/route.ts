@@ -133,11 +133,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (!profile) {
-      // If profile is missing, create it with 100 tokens
+      // If profile is missing, create it with 50 tokens
       const { data: newProfile, error: insertError } = await supabaseAdmin.from('profiles').insert({
         id: user.id,
         plan_type: 'free',
-        tokens: 100,
+        tokens: 50,
       }).select().single();
       
       if (insertError) {

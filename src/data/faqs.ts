@@ -28,7 +28,7 @@ export const faqs: FAQ[] = [
   {
     id: 5,
     question: "How do Tokens work?",
-    answer: "PostPilot uses a simple token system. Every action costs tokens — text generation costs 10 tokens, image generation costs 50 tokens. Free users get 100 tokens to try everything. Starter plans include 2,000 tokens/month, and Pro plans include 5,000 tokens/month. If you run out on a paid plan, you can purchase additional tokens at $4 per 1,000."
+    answer: "PostPilot uses a simple token system. Every action costs tokens — text generation costs 10 tokens, image generation costs 50 tokens. Free users get 50 tokens to try everything. Starter plans include 2,000 tokens/month, and Pro plans include 5,000 tokens/month. If you run out on a paid plan, you can purchase additional tokens at $4 per 1,000."
   },
   {
     id: 6,
@@ -38,7 +38,7 @@ export const faqs: FAQ[] = [
   {
     id: 7,
     question: "What are the Pricing Plans?",
-    answer: "Free ($0): 100 tokens with all tools unlocked — no account required. Starter ($11.99/mo): 2,000 tokens/month, 1 Writing DNA profile, all platforms. Pro ($29/mo): 5,000 tokens/month, unlimited DNA profiles, advanced Gemini 2.0 Flash AI model, and priority support. Both Starter and Pro plans can purchase extra tokens at $4 per 1,000 if they exceed their monthly limit."
+    answer: "Free ($0): 50 tokens with all tools unlocked — no account required. Starter ($11.99/mo): 2,000 tokens/month, 1 Writing DNA profile, all platforms. Pro ($29/mo): 5,000 tokens/month, unlimited DNA profiles, advanced Gemini 2.0 Flash AI model, and priority support. Both Starter and Pro plans can purchase extra tokens at $4 per 1,000 if they exceed their monthly limit."
   },
   {
     id: 8,
